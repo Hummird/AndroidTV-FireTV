@@ -1,6 +1,8 @@
 package org.jellyfin.androidtv.ui.composable.item
 
 import android.net.Uri
+import android.os.Handler
+import android.os.Looper
 import androidx.annotation.OptIn
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
@@ -52,6 +54,8 @@ import timber.log.Timber
 
 /** Delay before starting preview playback to debounce quick scrolling. */
 private const val PREVIEW_START_DELAY_MS = 500L
+
+private const val MAX_PREVIEW_DURATION_MS = 30_000L
 
 /** Seek to 20% of runtime as a fallback when no intro segment or resume position is available. */
 private fun runtimeFallbackMs(item: BaseItemDto): Long {
@@ -117,11 +121,7 @@ fun EpisodePreviewOverlay(
 			return@LaunchedEffect
 		}
 
-		Timber.d("EpisodePreview: Card focused for ${item.name} (${item.type}), waiting ${PREVIEW_START_DELAY_MS}ms")
-
 		delay(PREVIEW_START_DELAY_MS)
-
-		Timber.d("EpisodePreview: Resolving stream URL for ${item.name}")
 
 		try {
 			val (primaryUrl, fallbackUrlResolved, introEndMs) = withContext(Dispatchers.IO) {
@@ -164,7 +164,6 @@ fun EpisodePreviewOverlay(
 			streamUrl = primaryUrl
 			fallbackUrl = fallbackUrlResolved
 			seekPositionMs = introEndMs
-			Timber.d("EpisodePreview: Ready to play ${item.name}, seekTo=${introEndMs}ms, url=${primaryUrl.take(80)}...")
 		} catch (e: Exception) {
 			Timber.w(e, "EpisodePreview: Failed to resolve stream URL for ${item.name}")
 		}
@@ -200,6 +199,11 @@ fun EpisodePreviewOverlay(
 				.createMediaSource(MediaItem.fromUri(Uri.parse(currentUrl)))
 
 			var hasSeeked = false
+			val handler = Handler(Looper.getMainLooper())
+			val stopRunnable = Runnable {
+				isPlaying = false
+				player.stop()
+			}
 
 			player.addListener(object : Player.Listener {
 				override fun onPlaybackStateChanged(playbackState: Int) {
@@ -210,11 +214,12 @@ fun EpisodePreviewOverlay(
 								player.seekTo(seekPositionMs)
 							}
 							isPlaying = true
-							Timber.d("EpisodePreview: Playing ${item.name} from ${seekPositionMs}ms")
+							handler.removeCallbacks(stopRunnable)
+							handler.postDelayed(stopRunnable, MAX_PREVIEW_DURATION_MS)
 						}
 						Player.STATE_ENDED -> {
 							isPlaying = false
-							Timber.d("EpisodePreview: Ended ${item.name}")
+							handler.removeCallbacks(stopRunnable)
 						}
 						else -> { /* no-op */ }
 					}
@@ -223,9 +228,9 @@ fun EpisodePreviewOverlay(
 				override fun onPlayerError(error: PlaybackException) {
 					Timber.w("EpisodePreview: Error for ${item.name}: ${error.message}")
 					isPlaying = false
+					handler.removeCallbacks(stopRunnable)
 					val fb = fallbackUrl
 					if (fb != null) {
-						Timber.d("EpisodePreview: Retrying ${item.name} with fallback stream")
 						fallbackUrl = null
 						streamUrl = fb
 					}
@@ -237,6 +242,7 @@ fun EpisodePreviewOverlay(
 			exoPlayer = player
 
 			onDispose {
+				handler.removeCallbacks(stopRunnable)
 				player.stop()
 				player.release()
 				exoPlayer = null
