@@ -17,6 +17,7 @@ import androidx.compose.foundation.MutatePriority
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.focusGroup
+import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -645,7 +646,8 @@ class ItemDetailsFragment : Fragment() {
 			) {
 				item {
 					Row(
-						modifier = Modifier.fillMaxWidth(),
+						modifier = Modifier.fillMaxWidth()
+							.then(if (isBoxSet) Modifier.focusable() else Modifier),
 						horizontalArrangement = Arrangement.SpaceBetween,
 					) {
 							Column(
@@ -775,10 +777,13 @@ class ItemDetailsFragment : Fragment() {
 					}
 				}
 
-				// ---- Metadata ----
 				item {
-					Spacer(modifier = Modifier.height(24.dp))
-					if (isPlaylist) {
+					Column(
+						modifier = Modifier
+							.then(if (isBoxSet) Modifier.focusable() else Modifier),
+					) {
+						Spacer(modifier = Modifier.height(24.dp))
+						if (isPlaylist) {
 						Row(
 							modifier = Modifier
 								.fillMaxWidth()
@@ -800,6 +805,7 @@ class ItemDetailsFragment : Fragment() {
 						}
 					} else {
 						MetadataSection(item, uiState)
+					}
 					}
 				}
 
@@ -1793,7 +1799,9 @@ class ItemDetailsFragment : Fragment() {
 				contentPadding = PaddingValues(top = 100.dp, start = 48.dp, end = 48.dp, bottom = 80.dp),
 			) {
 				item {
-					Row(modifier = Modifier.padding(bottom = 24.dp)) {
+					Row(
+						modifier = Modifier.padding(bottom = 24.dp).focusable(),
+					) {
 							Box(modifier = Modifier.width(160.dp)) {
 								val personPhotoUrl = getPosterUrl(item)
 								if (personPhotoUrl != null) {

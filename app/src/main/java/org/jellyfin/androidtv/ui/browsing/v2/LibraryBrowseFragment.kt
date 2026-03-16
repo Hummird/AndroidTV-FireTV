@@ -6,8 +6,10 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.FrameLayout
 import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.animateScrollBy
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -17,7 +19,9 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyHorizontalGrid
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.itemsIndexed
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
@@ -29,9 +33,11 @@ import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
@@ -46,6 +52,7 @@ import androidx.fragment.app.Fragment
 import org.jellyfin.androidtv.R
 import org.jellyfin.androidtv.auth.repository.SessionRepository
 import org.jellyfin.androidtv.constant.Extras
+import org.jellyfin.androidtv.constant.GridDirection
 import org.jellyfin.androidtv.constant.ImageType
 import org.jellyfin.androidtv.constant.PosterSize
 import org.jellyfin.androidtv.data.service.BackgroundService
@@ -409,14 +416,13 @@ class LibraryBrowseFragment : Fragment() {
 		)
 		var focusTargetIndex by remember { mutableStateOf(if (viewModel.hasRestoredScroll) viewModel.savedFocusedIndex else 0) }
 		val focusRequester = remember { FocusRequester() }
+		val coroutineScope = rememberCoroutineScope()
 
 		val (cardWidth, cardHeight) = if (uiState.useAutoImageType) {
 			imageTypeToCardDimensions(uiState.posterSize, ImageType.THUMB)
 		} else {
 			imageTypeToCardDimensions(uiState.posterSize, uiState.imageType)
 		}
-
-		val columns = GridCells.Adaptive(minSize = (cardWidth + 16).dp)
 
 		LaunchedEffect(uiState.items.isNotEmpty()) {
 			if (uiState.items.isNotEmpty()) {
@@ -445,61 +451,132 @@ class LibraryBrowseFragment : Fragment() {
 			if (shouldLoadMore && uiState.hasMoreItems) viewModel.loadMore()
 		}
 
-		LazyVerticalGrid(
-			columns = columns,
-			state = gridState,
-			modifier = modifier
-				.fillMaxWidth()
-				.padding(horizontal = 60.dp),
-			contentPadding = PaddingValues(top = 20.dp, bottom = 16.dp),
-			horizontalArrangement = Arrangement.spacedBy(12.dp),
-			verticalArrangement = Arrangement.spacedBy(16.dp),
-		) {
-			itemsIndexed(uiState.items) { index, item ->
-				val itemModifier = if (index == focusTargetIndex) Modifier.focusRequester(focusRequester) else Modifier
-				val onItemFocused: () -> Unit = {
-					focusTargetIndex = index
-					viewModel.savedFocusedIndex = index
-					viewModel.setFocusedItem(item)
-					backgroundService.setBackground(item, BlurContext.BROWSING)
-				}
+		val itemSpacing = 12.dp
+		val minPadding = 40.dp
 
-				if (item.type == BaseItemKind.FOLDER || item.type == BaseItemKind.PHOTO_ALBUM) {
-					val folderHeight = (cardWidth * 9) / 16
-					LibraryFolderCard(
-						item = item,
-						imageUrl = getItemImageUrl(item, ImageType.THUMB),
-						cardWidth = cardWidth,
-						cardHeight = folderHeight,
-						onClick = { launchItem(item) },
-						onFocused = onItemFocused,
-						modifier = itemModifier,
-					)
-				} else if (uiState.useAutoImageType) {
-					val itemHeight = autoCardHeight(cardWidth, item.primaryImageAspectRatio)
-					LibraryPosterCard(
-						item = item,
-						modifier = itemModifier,
-						imageUrl = getItemImageUrl(item, ImageType.POSTER),
-						cardWidth = cardWidth,
-						cardHeight = itemHeight,
-						onClick = { launchItem(item) },
-						onFocused = onItemFocused,
-						showLabels = uiState.isGenreMode,
-						showBadge = uiState.isGenreMode,
-					)
-				} else {
-					LibraryPosterCard(
-						item = item,
-						modifier = itemModifier,
-						imageUrl = getItemImageUrl(item, uiState.imageType),
-						cardWidth = cardWidth,
-						cardHeight = cardHeight,
-						onClick = { launchItem(item) },
-						onFocused = onItemFocused,
-						showLabels = uiState.isGenreMode,
-						showBadge = uiState.isGenreMode,
-					)
+		val isHorizontal = uiState.gridDirection == GridDirection.HORIZONTAL
+
+		val gridItemContent: @Composable (index: Int, item: BaseItemDto) -> Unit = { index, item ->
+			val itemModifier = if (index == focusTargetIndex) Modifier.focusRequester(focusRequester) else Modifier
+			val onItemFocused: () -> Unit = {
+				focusTargetIndex = index
+				viewModel.savedFocusedIndex = index
+				viewModel.setFocusedItem(item)
+				backgroundService.setBackground(item, BlurContext.BROWSING)
+
+				val layoutInfo = gridState.layoutInfo
+				val itemInfo = layoutInfo.visibleItemsInfo.firstOrNull { it.index == index }
+				if (itemInfo != null) {
+					val viewportEnd = layoutInfo.viewportEndOffset
+					if (isHorizontal) {
+						val itemEnd = itemInfo.offset.x + itemInfo.size.width
+						val scaleExtra = (itemInfo.size.width * 0.06f).toInt()
+						if (itemEnd + scaleExtra > viewportEnd) {
+							coroutineScope.launch {
+								gridState.animateScrollBy((itemEnd + scaleExtra - viewportEnd).toFloat())
+							}
+						}
+					} else {
+						val itemBottom = itemInfo.offset.y + itemInfo.size.height
+						val scaleExtra = (itemInfo.size.height * 0.06f).toInt()
+						if (itemBottom + scaleExtra > viewportEnd) {
+							coroutineScope.launch {
+								gridState.animateScrollBy((itemBottom + scaleExtra - viewportEnd).toFloat())
+							}
+						}
+					}
+				}
+			}
+
+			if (item.type == BaseItemKind.FOLDER || item.type == BaseItemKind.PHOTO_ALBUM) {
+				val folderHeight = (cardWidth * 9) / 16
+				LibraryFolderCard(
+					item = item,
+					imageUrl = getItemImageUrl(item, ImageType.THUMB),
+					cardWidth = cardWidth,
+					cardHeight = folderHeight,
+					onClick = { launchItem(item) },
+					onFocused = onItemFocused,
+					modifier = itemModifier,
+				)
+			} else if (uiState.useAutoImageType) {
+				val itemHeight = autoCardHeight(cardWidth, item.primaryImageAspectRatio)
+				LibraryPosterCard(
+					item = item,
+					modifier = itemModifier,
+					imageUrl = getItemImageUrl(item, ImageType.POSTER),
+					cardWidth = cardWidth,
+					cardHeight = itemHeight,
+					onClick = { launchItem(item) },
+					onFocused = onItemFocused,
+					showLabels = uiState.isGenreMode,
+					showBadge = uiState.isGenreMode,
+				)
+			} else {
+				LibraryPosterCard(
+					item = item,
+					modifier = itemModifier,
+					imageUrl = getItemImageUrl(item, uiState.imageType),
+					cardWidth = cardWidth,
+					cardHeight = cardHeight,
+					onClick = { launchItem(item) },
+					onFocused = onItemFocused,
+					showLabels = uiState.isGenreMode,
+					showBadge = uiState.isGenreMode,
+				)
+			}
+		}
+
+		if (isHorizontal) {
+			BoxWithConstraints(modifier = modifier.fillMaxSize()) {
+				val availableHeight = maxHeight - minPadding * 2
+				val cellHeight = cardHeight.dp + 16.dp
+				val rowCount = (availableHeight / cellHeight).toInt().coerceAtLeast(2)
+				val gridHeight = cardHeight.dp * rowCount + 16.dp * (rowCount - 1)
+				val verticalPadding = (maxHeight - gridHeight) / 2
+
+				LazyHorizontalGrid(
+					rows = GridCells.Fixed(rowCount),
+					state = gridState,
+					modifier = Modifier.fillMaxSize(),
+					contentPadding = PaddingValues(
+						start = 20.dp,
+						end = 16.dp,
+						top = verticalPadding,
+						bottom = verticalPadding,
+					),
+					horizontalArrangement = Arrangement.spacedBy(itemSpacing),
+					verticalArrangement = Arrangement.spacedBy(16.dp),
+				) {
+					itemsIndexed(uiState.items) { index, item ->
+						gridItemContent(index, item)
+					}
+				}
+			}
+		} else {
+			BoxWithConstraints(modifier = modifier.fillMaxWidth()) {
+				val availableWidth = maxWidth - minPadding * 2
+				val cellWidth = cardWidth.dp + itemSpacing
+				val columnCount = (availableWidth / cellWidth).toInt().coerceAtLeast(1)
+				val gridWidth = cardWidth.dp * columnCount + itemSpacing * (columnCount - 1)
+				val horizontalPadding = (maxWidth - gridWidth) / 2
+
+				LazyVerticalGrid(
+					columns = GridCells.Fixed(columnCount),
+					state = gridState,
+					modifier = Modifier.fillMaxWidth(),
+					contentPadding = PaddingValues(
+						start = horizontalPadding,
+						end = horizontalPadding,
+						top = 20.dp,
+						bottom = 16.dp,
+					),
+					horizontalArrangement = Arrangement.spacedBy(itemSpacing),
+					verticalArrangement = Arrangement.spacedBy(16.dp),
+				) {
+					itemsIndexed(uiState.items) { index, item ->
+						gridItemContent(index, item)
+					}
 				}
 			}
 		}
@@ -533,32 +610,32 @@ class LibraryBrowseFragment : Fragment() {
 	private fun imageTypeToCardDimensions(posterSize: PosterSize, imageType: ImageType): Pair<Int, Int> {
 		return when (imageType) {
 			ImageType.POSTER -> when (posterSize) {
-				PosterSize.SMALLEST -> 100 to 150
-				PosterSize.SMALL -> 120 to 180
-				PosterSize.MED -> 140 to 210
-				PosterSize.LARGE -> 180 to 270
-				PosterSize.X_LARGE -> 220 to 330
+				PosterSize.SMALLEST -> 80 to 120
+				PosterSize.SMALL -> 100 to 150
+				PosterSize.MED -> 120 to 180
+				PosterSize.LARGE -> 150 to 225
+				PosterSize.X_LARGE -> 180 to 270
 			}
 			ImageType.THUMB -> when (posterSize) {
-				PosterSize.SMALLEST -> 160 to 90
-				PosterSize.SMALL -> 190 to 107
-				PosterSize.MED -> 220 to 124
-				PosterSize.LARGE -> 280 to 158
-				PosterSize.X_LARGE -> 340 to 191
+				PosterSize.SMALLEST -> 130 to 73
+				PosterSize.SMALL -> 160 to 90
+				PosterSize.MED -> 190 to 107
+				PosterSize.LARGE -> 230 to 129
+				PosterSize.X_LARGE -> 280 to 158
 			}
 			ImageType.BANNER -> when (posterSize) {
-				PosterSize.SMALLEST -> 300 to 52
-				PosterSize.SMALL -> 360 to 62
-				PosterSize.MED -> 420 to 72
-				PosterSize.LARGE -> 500 to 86
-				PosterSize.X_LARGE -> 600 to 103
+				PosterSize.SMALLEST -> 240 to 41
+				PosterSize.SMALL -> 300 to 52
+				PosterSize.MED -> 360 to 62
+				PosterSize.LARGE -> 420 to 72
+				PosterSize.X_LARGE -> 500 to 86
 			}
 			ImageType.SQUARE -> when (posterSize) {
-				PosterSize.SMALLEST -> 100 to 100
-				PosterSize.SMALL -> 120 to 120
-				PosterSize.MED -> 140 to 140
-				PosterSize.LARGE -> 180 to 180
-				PosterSize.X_LARGE -> 220 to 220
+				PosterSize.SMALLEST -> 80 to 80
+				PosterSize.SMALL -> 100 to 100
+				PosterSize.MED -> 120 to 120
+				PosterSize.LARGE -> 150 to 150
+				PosterSize.X_LARGE -> 180 to 180
 			}
 		}
 	}

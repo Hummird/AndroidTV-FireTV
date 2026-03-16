@@ -169,7 +169,6 @@ fun LibraryPosterCard(
 			),
 		horizontalAlignment = Alignment.Start,
 	) {
-		// Poster image with type badge overlay
 		Box(
 			modifier = Modifier
 				.size(width = cardWidth.dp, height = cardHeight.dp)
