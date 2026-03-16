@@ -41,6 +41,7 @@ import org.jellyfin.androidtv.data.service.jellyseerr.JellyseerrMovieDetailsDto
 import org.jellyfin.androidtv.data.service.jellyseerr.JellyseerrRequestDto
 import org.jellyfin.androidtv.data.service.jellyseerr.JellyseerrTvDetailsDto
 import org.jellyfin.androidtv.ui.base.JellyfinTheme
+import org.jellyfin.androidtv.ui.home.mediabar.SponsorBlockApi
 import org.jellyfin.androidtv.ui.itemdetail.v2.DetailActionButton
 import org.jellyfin.androidtv.ui.itemhandling.JellyseerrMediaBaseRowItem
 import org.jellyfin.androidtv.ui.itemhandling.JellyseerrPersonBaseRowItem
@@ -1900,32 +1901,36 @@ class MediaDetailsFragment : Fragment() {
 	}
 
 	private fun playTrailer() {
-		val item = selectedItem ?: return
-		
-		// Open YouTube search for the trailer
-		// Format: "[Movie/Show Name] [Year] official trailer"
-		val year = when {
-			item.mediaType == "movie" -> item.releaseDate?.take(4)
-			else -> item.firstAirDate?.take(4)
+		val videos = movieDetails?.relatedVideos ?: tvDetails?.relatedVideos ?: emptyList()
+		val youtubeTrailer = videos
+			.filter { it.site.equals("YouTube", ignoreCase = true) && it.type.equals("Trailer", ignoreCase = true) }
+			.maxByOrNull { it.size ?: 0 }
+			?: videos.firstOrNull { it.site.equals("YouTube", ignoreCase = true) }
+
+		val videoId = youtubeTrailer?.key
+		if (videoId == null) {
+			Toast.makeText(requireContext(), "No trailer available", Toast.LENGTH_SHORT).show()
+			return
 		}
-		val title = item.title ?: item.name ?: "Unknown"
-		val searchQuery = "$title ${year ?: ""} official trailer"
-		
-		try {
-			// Create a generic YouTube search intent without specifying a package
-			// This allows the user to choose their preferred app (YouTube, SmartTube, etc.)
-			val youtubeSearchUrl = "https://www.youtube.com/results?search_query=${android.net.Uri.encode(searchQuery)}"
-			val intent = android.content.Intent(
-				android.content.Intent.ACTION_VIEW,
-				android.net.Uri.parse(youtubeSearchUrl)
-			)
-			
-			// Show app chooser to allow user to select their preferred app
-			val chooser = android.content.Intent.createChooser(intent, "Play Trailer")
-			startActivity(chooser)
-		} catch (e: Exception) {
-			Timber.e(e, "Error opening trailer")
-			Toast.makeText(requireContext(), "Unable to open trailer", Toast.LENGTH_SHORT).show()
+
+		lifecycleScope.launch {
+			try {
+				val segments = withContext(Dispatchers.IO) {
+					SponsorBlockApi.getSkipSegments(videoId)
+				}
+				val startSeconds = SponsorBlockApi.calculateStartTime(segments)
+				val segmentsJson = segments.joinToString(",", "[", "]") { seg ->
+					"""{"start":${seg.startTime},"end":${seg.endTime},"category":"${seg.category}","action":"${seg.actionType}"}"""
+				}
+				navigationRepository.navigate(Destinations.trailerPlayer(
+					videoId = videoId,
+					startSeconds = startSeconds,
+					segmentsJson = segmentsJson,
+				))
+			} catch (e: Exception) {
+				Timber.w(e, "Failed to play trailer")
+				Toast.makeText(requireContext(), "Unable to play trailer", Toast.LENGTH_SHORT).show()
+			}
 		}
 	}
 	

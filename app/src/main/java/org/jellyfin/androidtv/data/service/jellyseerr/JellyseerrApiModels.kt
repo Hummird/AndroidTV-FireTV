@@ -289,6 +289,7 @@ data class JellyseerrMovieDetailsDto(
 	val externalIds: JellyseerrExternalIds? = null,
 	val mediaInfo: JellyseerrMediaInfoDto? = null,
 	val keywords: List<JellyseerrKeywordDto> = emptyList(),
+	val relatedVideos: List<JellyseerrRelatedVideoDto> = emptyList(),
 )
 
 @Serializable
@@ -314,6 +315,17 @@ data class JellyseerrTvDetailsDto(
 	val externalIds: JellyseerrExternalIds? = null,
 	val mediaInfo: JellyseerrMediaInfoDto? = null,
 	val keywords: List<JellyseerrKeywordDto> = emptyList(),
+	val relatedVideos: List<JellyseerrRelatedVideoDto> = emptyList(),
+)
+
+@Serializable
+data class JellyseerrRelatedVideoDto(
+	val url: String? = null,
+	val key: String? = null,
+	val name: String? = null,
+	val size: Int? = null,
+	val type: String? = null,
+	val site: String? = null,
 )
 
 @Serializable
