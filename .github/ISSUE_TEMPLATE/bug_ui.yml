@@ -31,7 +31,7 @@ body:
         - Details page
         - Settings
         - Search
-        - Jellyseerr
+        - Seerr
         - Player UI (controls/OSD)
         - Other
     validations:

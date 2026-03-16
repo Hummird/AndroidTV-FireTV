@@ -195,7 +195,7 @@ dependencies {
 	implementation(libs.kotlinx.coroutines)
 	implementation(libs.kotlinx.serialization.json)
 
-	// Ktor (HTTP client for Jellyseerr)
+	// Ktor (HTTP client for Seerr)
 	implementation(libs.bundles.ktor)
 
 	// Android(x)

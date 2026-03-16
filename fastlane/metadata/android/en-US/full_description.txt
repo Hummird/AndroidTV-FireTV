@@ -9,7 +9,7 @@ With Moonfin, you can:
 * Browse and stream your movies, TV shows, and music
 * Watch Live TV and recorded shows (additional server setup required)
 * Preview trailers before watching
-* Request new content via Jellyseerr integration
+* Request new content via Seerr integration
 * Enjoy a beautiful Compose-based interface with glass-morphism design
 * Customize your home screen and playback experience
 * Sync settings across devices with the Moonfin server plugin

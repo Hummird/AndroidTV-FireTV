@@ -12,7 +12,6 @@ import org.jellyfin.androidtv.R
 import org.jellyfin.androidtv.auth.repository.ServerRepository
 import org.jellyfin.androidtv.data.service.pluginsync.PluginSyncService
 import org.jellyfin.androidtv.preference.UserPreferences
-import org.jellyfin.androidtv.preference.UserSettingPreferences
 import org.jellyfin.androidtv.ui.base.Icon
 import org.jellyfin.androidtv.ui.base.Text
 import org.jellyfin.androidtv.ui.base.form.Checkbox
@@ -22,24 +21,15 @@ import org.jellyfin.androidtv.ui.navigation.LocalRouter
 import org.jellyfin.androidtv.ui.settings.Routes
 import org.jellyfin.androidtv.ui.settings.compat.rememberPreference
 import org.jellyfin.androidtv.ui.settings.composable.SettingsColumn
-import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.JsonArray
-import org.jellyfin.androidtv.ui.settings.screen.customization.getBlurLabel
-import org.jellyfin.androidtv.ui.settings.screen.customization.getMediaBarItemCountLabel
-import org.jellyfin.androidtv.ui.settings.screen.customization.getMediaBarSourceTypeLabel
-import org.jellyfin.androidtv.ui.settings.screen.customization.getOverlayColorLabel
-import org.jellyfin.androidtv.ui.settings.screen.customization.getSeasonalLabel
-import org.jellyfin.androidtv.ui.settings.screen.customization.getShuffleContentTypeLabel
+import org.jellyfin.androidtv.util.supportsFeature
 import org.koin.compose.koinInject
 import org.moonfin.server.core.feature.ServerFeature
-import org.jellyfin.androidtv.util.supportsFeature
 
 @Composable
 fun SettingsPluginScreen() {
 	val router = LocalRouter.current
 	val coroutineScope = rememberCoroutineScope()
 	val userPreferences = koinInject<UserPreferences>()
-	val userSettingPreferences = koinInject<UserSettingPreferences>()
 	val pluginSyncService = koinInject<PluginSyncService>()
 	val serverRepository = koinInject<ServerRepository>()
 	val currentServer by serverRepository.currentServer.collectAsState()
@@ -65,7 +55,6 @@ fun SettingsPluginScreen() {
 					pluginSyncEnabled = !pluginSyncEnabled
 					userPreferences[UserPreferences.pluginSyncAutoDetected] = true
 					if (pluginSyncEnabled) {
-						// Write directly — rememberPreference defers via LaunchedEffect
 						userPreferences[UserPreferences.pluginSyncEnabled] = true
 						coroutineScope.launch {
 							pluginSyncService.initialSync()
@@ -78,338 +67,61 @@ fun SettingsPluginScreen() {
 			)
 		}
 
-		item { ListSection(headingContent = { Text(stringResource(R.string.pref_toolbar_customization)) }) }
-
 		item {
-			val navbarPosition by rememberPreference(userPreferences, UserPreferences.navbarPosition)
-			val navbarLabel = when (navbarPosition) {
-				org.jellyfin.androidtv.preference.constant.NavbarPosition.TOP -> stringResource(R.string.pref_navbar_position_top)
-				org.jellyfin.androidtv.preference.constant.NavbarPosition.LEFT -> stringResource(R.string.pref_navbar_position_left)
-			}
 			ListButton(
-				headingContent = { Text(stringResource(R.string.pref_navbar_position)) },
-				captionContent = { Text(navbarLabel) },
-				onClick = { router.push(Routes.MOONFIN_NAVBAR_POSITION) }
+				leadingContent = { Icon(painterResource(R.drawable.ic_grid), contentDescription = null) },
+				headingContent = { Text(stringResource(R.string.pref_toolbar_customization)) },
+				captionContent = { Text(stringResource(R.string.pref_toolbar_customization_description)) },
+				onClick = { router.push(Routes.PLUGIN_TOOLBAR) }
 			)
 		}
 
 		item {
-			var showShuffleButton by rememberPreference(userPreferences, UserPreferences.showShuffleButton)
 			ListButton(
-				headingContent = { Text(stringResource(R.string.pref_show_shuffle_button)) },
-				captionContent = { Text(stringResource(R.string.pref_show_shuffle_button_description)) },
-				trailingContent = { Checkbox(checked = showShuffleButton) },
-				onClick = { showShuffleButton = !showShuffleButton }
+				leadingContent = { Icon(painterResource(R.drawable.ic_house), contentDescription = null) },
+				headingContent = { Text(stringResource(R.string.home_section_settings)) },
+				captionContent = { Text(stringResource(R.string.pref_home_section_settings_description)) },
+				onClick = { router.push(Routes.PLUGIN_HOME) }
 			)
 		}
 
 		item {
-			var showGenresButton by rememberPreference(userPreferences, UserPreferences.showGenresButton)
 			ListButton(
-				headingContent = { Text(stringResource(R.string.pref_show_genres_button)) },
-				captionContent = { Text(stringResource(R.string.pref_show_genres_button_description)) },
-				trailingContent = { Checkbox(checked = showGenresButton) },
-				onClick = { showGenresButton = !showGenresButton }
+				leadingContent = { Icon(painterResource(R.drawable.ic_channel_bar), contentDescription = null) },
+				headingContent = { Text(stringResource(R.string.pref_media_bar_title)) },
+				captionContent = { Text(stringResource(R.string.pref_media_bar_settings_description)) },
+				onClick = { router.push(Routes.PLUGIN_MEDIA_BAR) }
 			)
 		}
 
 		item {
-			var showFavoritesButton by rememberPreference(userPreferences, UserPreferences.showFavoritesButton)
 			ListButton(
-				headingContent = { Text(stringResource(R.string.pref_show_favorites_button)) },
-				captionContent = { Text(stringResource(R.string.pref_show_favorites_button_description)) },
-				trailingContent = { Checkbox(checked = showFavoritesButton) },
-				onClick = { showFavoritesButton = !showFavoritesButton }
+				leadingContent = { Icon(painterResource(R.drawable.ic_music_album), contentDescription = null) },
+				headingContent = { Text(stringResource(R.string.pref_theme_music_title)) },
+				captionContent = { Text(stringResource(R.string.pref_theme_music_settings_description)) },
+				onClick = { router.push(Routes.PLUGIN_THEME_MUSIC) }
 			)
 		}
 
 		item {
-			var showLibrariesInToolbar by rememberPreference(userPreferences, UserPreferences.showLibrariesInToolbar)
 			ListButton(
-				headingContent = { Text(stringResource(R.string.pref_show_libraries_in_toolbar)) },
-				captionContent = { Text(stringResource(R.string.pref_show_libraries_in_toolbar_description)) },
-				trailingContent = { Checkbox(checked = showLibrariesInToolbar) },
-				onClick = { showLibrariesInToolbar = !showLibrariesInToolbar }
+				leadingContent = { Icon(painterResource(R.drawable.ic_photo), contentDescription = null) },
+				headingContent = { Text(stringResource(R.string.pref_appearance)) },
+				captionContent = { Text(stringResource(R.string.pref_appearance_settings_description)) },
+				onClick = { router.push(Routes.PLUGIN_APPEARANCE) }
 			)
 		}
 
 		item {
-			val shuffleContentType by rememberPreference(userPreferences, UserPreferences.shuffleContentType)
-			ListButton(
-				headingContent = { Text(stringResource(R.string.pref_shuffle_content_type)) },
-				captionContent = { Text(getShuffleContentTypeLabel(shuffleContentType)) },
-				onClick = { router.push(Routes.MOONFIN_SHUFFLE_CONTENT_TYPE) }
-			)
-		}
-
-		item { ListSection(headingContent = { Text(stringResource(R.string.home_section_settings)) }) }
-
-		item {
-			var mergeContinueWatchingNextUp by rememberPreference(userPreferences, UserPreferences.mergeContinueWatchingNextUp)
-			ListButton(
-				headingContent = { Text(stringResource(R.string.lbl_merge_continue_watching_next_up)) },
-				captionContent = { Text(stringResource(R.string.lbl_merge_continue_watching_next_up_description)) },
-				trailingContent = { Checkbox(checked = mergeContinueWatchingNextUp) },
-				onClick = { mergeContinueWatchingNextUp = !mergeContinueWatchingNextUp }
-			)
-		}
-
-		item {
-			var enableMultiServerLibraries by rememberPreference(userPreferences, UserPreferences.enableMultiServerLibraries)
-			ListButton(
-				headingContent = { Text(stringResource(R.string.pref_multi_server_libraries)) },
-				captionContent = { Text(stringResource(R.string.pref_multi_server_libraries_description)) },
-				trailingContent = { Checkbox(checked = enableMultiServerLibraries) },
-				onClick = { enableMultiServerLibraries = !enableMultiServerLibraries }
-			)
-		}
-
-		item {
-			var enableFolderView by rememberPreference(userPreferences, UserPreferences.enableFolderView)
-			ListButton(
-				headingContent = { Text(stringResource(R.string.pref_enable_folder_view)) },
-				captionContent = { Text(stringResource(R.string.pref_enable_folder_view_description)) },
-				trailingContent = { Checkbox(checked = enableFolderView) },
-				onClick = { enableFolderView = !enableFolderView }
-			)
-		}
-
-		item {
-			var confirmExit by rememberPreference(userPreferences, UserPreferences.confirmExit)
-			ListButton(
-				headingContent = { Text(stringResource(R.string.pref_confirm_exit)) },
-				captionContent = { Text(stringResource(R.string.pref_confirm_exit_description)) },
-				trailingContent = { Checkbox(checked = confirmExit) },
-				onClick = { confirmExit = !confirmExit }
-			)
-		}
-
-		item { ListSection(headingContent = { Text(stringResource(R.string.pref_media_bar_title)) }) }
-
-		item {
-			var mediaBarEnabled by rememberPreference(userSettingPreferences, UserSettingPreferences.mediaBarEnabled)
-			ListButton(
-				headingContent = { Text(stringResource(R.string.pref_media_bar_enable)) },
-				captionContent = { Text(stringResource(R.string.pref_media_bar_enable_summary)) },
-				trailingContent = { Checkbox(checked = mediaBarEnabled) },
-				onClick = { mediaBarEnabled = !mediaBarEnabled }
-			)
-		}
-
-		item {
-			val mediaBarEnabled by rememberPreference(userSettingPreferences, UserSettingPreferences.mediaBarEnabled)
-			val mediaBarSourceType by rememberPreference(userSettingPreferences, UserSettingPreferences.mediaBarSourceType)
-			val pluginSyncEnabled = userPreferences[UserPreferences.pluginSyncEnabled]
-			ListButton(
-				headingContent = { Text(stringResource(R.string.pref_media_bar_source_type)) },
-				captionContent = { Text(getMediaBarSourceTypeLabel(mediaBarSourceType)) },
-				enabled = mediaBarEnabled && pluginSyncEnabled,
-				onClick = { router.push(Routes.MOONFIN_MEDIA_BAR_SOURCE_TYPE) }
-			)
-		}
-
-		item {
-			val mediaBarEnabled by rememberPreference(userSettingPreferences, UserSettingPreferences.mediaBarEnabled)
-			val mediaBarSourceType by rememberPreference(userSettingPreferences, UserSettingPreferences.mediaBarSourceType)
-			val pluginSyncEnabled = userPreferences[UserPreferences.pluginSyncEnabled]
-			val excludedGenres = userSettingPreferences[UserSettingPreferences.mediaBarExcludedGenres]
-			val excludedCount = try {
-				val arr = Json.parseToJsonElement(excludedGenres.ifBlank { "[]" }) as? JsonArray
-				arr?.size ?: 0
-			} catch (_: Exception) { 0 }
-			val caption = if (excludedCount == 0) stringResource(R.string.pref_media_bar_excluded_genres_none)
-				else "$excludedCount excluded"
-			ListButton(
-				headingContent = { Text(stringResource(R.string.pref_media_bar_excluded_genres)) },
-				captionContent = { Text(caption) },
-				enabled = mediaBarEnabled && mediaBarSourceType == "plugin" && pluginSyncEnabled,
-				onClick = { router.push(Routes.MOONFIN_MEDIA_BAR_EXCLUDED_GENRES) }
-			)
-		}
-
-		item {
-			val mediaBarEnabled by rememberPreference(userSettingPreferences, UserSettingPreferences.mediaBarEnabled)
-			val mediaBarSourceType by rememberPreference(userSettingPreferences, UserSettingPreferences.mediaBarSourceType)
-			val pluginSyncEnabled = userPreferences[UserPreferences.pluginSyncEnabled]
-			val mediaBarContentType by rememberPreference(userSettingPreferences, UserSettingPreferences.mediaBarContentType)
-			ListButton(
-				headingContent = { Text(stringResource(R.string.pref_media_bar_content_type)) },
-				captionContent = { Text(getShuffleContentTypeLabel(mediaBarContentType)) },
-				enabled = mediaBarEnabled && !(mediaBarSourceType == "plugin" && pluginSyncEnabled),
-				onClick = { router.push(Routes.MOONFIN_MEDIA_BAR_CONTENT_TYPE) }
-			)
-		}
-
-		item {
-			val mediaBarEnabled by rememberPreference(userSettingPreferences, UserSettingPreferences.mediaBarEnabled)
-			val mediaBarSourceType by rememberPreference(userSettingPreferences, UserSettingPreferences.mediaBarSourceType)
-			val pluginSyncEnabled = userPreferences[UserPreferences.pluginSyncEnabled]
-			val mediaBarItemCount by rememberPreference(userSettingPreferences, UserSettingPreferences.mediaBarItemCount)
-			ListButton(
-				headingContent = { Text(stringResource(R.string.pref_media_bar_item_count)) },
-				captionContent = { Text(getMediaBarItemCountLabel(mediaBarItemCount)) },
-				enabled = mediaBarEnabled && !(mediaBarSourceType == "plugin" && pluginSyncEnabled),
-				onClick = { router.push(Routes.MOONFIN_MEDIA_BAR_ITEM_COUNT) }
-			)
-		}
-
-		item {
-			val mediaBarEnabled by rememberPreference(userSettingPreferences, UserSettingPreferences.mediaBarEnabled)
-			val mediaBarOverlayOpacity by rememberPreference(userSettingPreferences, UserSettingPreferences.mediaBarOverlayOpacity)
-			ListButton(
-				headingContent = { Text(stringResource(R.string.pref_media_bar_overlay_opacity)) },
-				captionContent = { Text("$mediaBarOverlayOpacity%") },
-				enabled = mediaBarEnabled,
-				onClick = { router.push(Routes.MOONFIN_MEDIA_BAR_OPACITY) }
-			)
-		}
-
-		item {
-			val mediaBarEnabled by rememberPreference(userSettingPreferences, UserSettingPreferences.mediaBarEnabled)
-			val mediaBarOverlayColor by rememberPreference(userSettingPreferences, UserSettingPreferences.mediaBarOverlayColor)
-			ListButton(
-				headingContent = { Text(stringResource(R.string.pref_media_bar_overlay_color)) },
-				captionContent = { Text(getOverlayColorLabel(mediaBarOverlayColor)) },
-				enabled = mediaBarEnabled,
-				onClick = { router.push(Routes.MOONFIN_MEDIA_BAR_COLOR) }
-			)
-		}
-
-		item {
-			val mediaBarEnabled by rememberPreference(userSettingPreferences, UserSettingPreferences.mediaBarEnabled)
-			var trailerPreview by rememberPreference(userSettingPreferences, UserSettingPreferences.mediaBarTrailerPreview)
-			ListButton(
-				headingContent = { Text(stringResource(R.string.pref_media_bar_trailer_preview)) },
-				captionContent = { Text(stringResource(R.string.pref_media_bar_trailer_preview_summary)) },
-				trailingContent = { Checkbox(checked = trailerPreview) },
-				enabled = mediaBarEnabled,
-				onClick = { trailerPreview = !trailerPreview }
-			)
-		}
-
-		item {
-			var episodePreview by rememberPreference(userSettingPreferences, UserSettingPreferences.episodePreviewEnabled)
-			ListButton(
-				headingContent = { Text(stringResource(R.string.pref_episode_preview)) },
-				captionContent = { Text(stringResource(R.string.pref_episode_preview_summary)) },
-				trailingContent = { Checkbox(checked = episodePreview) },
-				onClick = { episodePreview = !episodePreview }
-			)
-		}
-
-		item {
-			var previewAudio by rememberPreference(userSettingPreferences, UserSettingPreferences.previewAudioEnabled)
-			ListButton(
-				headingContent = { Text(stringResource(R.string.pref_preview_audio)) },
-				captionContent = { Text(stringResource(R.string.pref_preview_audio_summary)) },
-				trailingContent = { Checkbox(checked = previewAudio) },
-				onClick = { previewAudio = !previewAudio }
-			)
-		}
-
-		item { ListSection(headingContent = { Text(stringResource(R.string.pref_theme_music_title)) }) }
-
-		item {
-			var themeMusicEnabled by rememberPreference(userSettingPreferences, UserSettingPreferences.themeMusicEnabled)
-			ListButton(
-				headingContent = { Text(stringResource(R.string.pref_theme_music_enable)) },
-				captionContent = { Text(stringResource(R.string.pref_theme_music_enable_summary)) },
-				trailingContent = { Checkbox(checked = themeMusicEnabled) },
-				onClick = { themeMusicEnabled = !themeMusicEnabled }
-			)
-		}
-
-		item {
-			val themeMusicEnabled by rememberPreference(userSettingPreferences, UserSettingPreferences.themeMusicEnabled)
-			var themeMusicOnHomeRows by rememberPreference(userSettingPreferences, UserSettingPreferences.themeMusicOnHomeRows)
-			ListButton(
-				headingContent = { Text(stringResource(R.string.pref_theme_music_on_home_rows)) },
-				captionContent = { Text(stringResource(R.string.pref_theme_music_on_home_rows_summary)) },
-				trailingContent = { Checkbox(checked = themeMusicOnHomeRows) },
-				enabled = themeMusicEnabled,
-				onClick = { themeMusicOnHomeRows = !themeMusicOnHomeRows }
-			)
-		}
-
-		item {
-			val themeMusicEnabled by rememberPreference(userSettingPreferences, UserSettingPreferences.themeMusicEnabled)
-			val themeMusicVolume by rememberPreference(userSettingPreferences, UserSettingPreferences.themeMusicVolume)
-			ListButton(
-				headingContent = { Text(stringResource(R.string.pref_theme_music_volume)) },
-				captionContent = { Text("$themeMusicVolume%") },
-				enabled = themeMusicEnabled,
-				onClick = { router.push(Routes.MOONFIN_THEME_MUSIC_VOLUME) }
-			)
-		}
-
-		item { ListSection(headingContent = { Text(stringResource(R.string.pref_appearance)) }) }
-
-		item {
-			val seasonalSurprise by rememberPreference(userPreferences, UserPreferences.seasonalSurprise)
-			ListButton(
-				headingContent = { Text(stringResource(R.string.pref_seasonal_surprise)) },
-				captionContent = { Text(getSeasonalLabel(seasonalSurprise)) },
-				onClick = { router.push(Routes.MOONFIN_SEASONAL_SURPRISE) }
-			)
-		}
-
-		item {
-			val detailsBlur by rememberPreference(userSettingPreferences, UserSettingPreferences.detailsBackgroundBlurAmount)
-			ListButton(
-				headingContent = { Text(stringResource(R.string.pref_details_background_blur_amount)) },
-				captionContent = { Text(getBlurLabel(detailsBlur)) },
-				onClick = { router.push(Routes.MOONFIN_DETAILS_BLUR) }
-			)
-		}
-
-		item {
-			val browsingBlur by rememberPreference(userSettingPreferences, UserSettingPreferences.browsingBackgroundBlurAmount)
-			ListButton(
-				headingContent = { Text(stringResource(R.string.pref_browsing_background_blur_amount)) },
-				captionContent = { Text(getBlurLabel(browsingBlur)) },
-				onClick = { router.push(Routes.MOONFIN_BROWSING_BLUR) }
-			)
-		}
-
-		item { ListSection(headingContent = { Text(stringResource(R.string.pref_enable_additional_ratings)) }) }
-
-		item {
-			var enableAdditionalRatings by rememberPreference(userSettingPreferences, UserSettingPreferences.enableAdditionalRatings)
 			ListButton(
 				leadingContent = { Icon(painterResource(R.drawable.ic_star), contentDescription = null) },
-				headingContent = { Text(stringResource(R.string.pref_enable_additional_ratings)) },
-				captionContent = { Text(stringResource(R.string.pref_enable_additional_ratings_description)) },
-				trailingContent = { Checkbox(checked = enableAdditionalRatings) },
-				onClick = { enableAdditionalRatings = !enableAdditionalRatings }
-			)
-		}
-
-		item {
-			var showRatingLabels by rememberPreference(userSettingPreferences, UserSettingPreferences.showRatingLabels)
-			ListButton(
-				headingContent = { Text(stringResource(R.string.pref_show_rating_labels)) },
-				captionContent = { Text(stringResource(R.string.pref_show_rating_labels_description)) },
-				trailingContent = { Checkbox(checked = showRatingLabels) },
-				onClick = { showRatingLabels = !showRatingLabels }
-			)
-		}
-
-		item { ListSection(headingContent = { Text(stringResource(R.string.pref_episode_ratings)) }) }
-
-		item {
-			var enableEpisodeRatings by rememberPreference(userSettingPreferences, UserSettingPreferences.enableEpisodeRatings)
-			ListButton(
-				leadingContent = { Icon(painterResource(R.drawable.ic_star), contentDescription = null) },
-				headingContent = { Text(stringResource(R.string.pref_episode_ratings)) },
-				captionContent = { Text(stringResource(R.string.pref_episode_ratings_description)) },
-				trailingContent = { Checkbox(checked = enableEpisodeRatings) },
-				onClick = { enableEpisodeRatings = !enableEpisodeRatings }
+				headingContent = { Text(stringResource(R.string.pref_ratings_title)) },
+				captionContent = { Text(stringResource(R.string.pref_ratings_settings_description)) },
+				onClick = { router.push(Routes.PLUGIN_RATINGS) }
 			)
 		}
 
 		if (jellyseerrSupported) {
-			item { ListSection(headingContent = { Text(stringResource(R.string.jellyseerr)) }) }
-
 			item {
 				ListButton(
 					leadingContent = { Icon(painterResource(R.drawable.ic_jellyseerr_jellyfish), contentDescription = null) },
@@ -419,8 +131,6 @@ fun SettingsPluginScreen() {
 				)
 			}
 		}
-
-		item { ListSection(headingContent = { Text(stringResource(R.string.pref_parental_controls)) }) }
 
 		item {
 			ListButton(

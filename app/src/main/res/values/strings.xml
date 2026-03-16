@@ -841,44 +841,51 @@
     <string name="pref_theme_music_on_home_rows">Play on home rows</string>
     <string name="pref_theme_music_on_home_rows_summary">Play theme music when focusing on items in home rows</string>
 
-    <!-- Jellyseerr Settings -->
-    <string name="jellyseerr">Jellyseerr</string>
+    <!-- Seerr Settings -->
+    <string name="jellyseerr">Seerr</string>
     <string name="home">Home</string>
     <string name="search">Search</string>
-    <string name="jellyseerr_settings">Jellyseerr</string>
+    <string name="jellyseerr_settings">Seerr</string>
     <string name="jellyseerr_settings_description">Authentication, rows &amp; full configuration</string>
     <string name="jellyseerr_server_settings">Server Configuration</string>
-    <string name="jellyseerr_enabled">Enable Jellyseerr</string>
-    <string name="jellyseerr_enabled_description">Show Jellyseerr integration in the app</string>
+    <string name="jellyseerr_enabled">Enable Seerr</string>
+    <string name="jellyseerr_enabled_description">Show Seerr integration in the app</string>
     <string name="jellyseerr_server_url">Server URL</string>
-    <string name="jellyseerr_server_url_description">Jellyseerr server address (e.g., http://192.168.1.100:5055)</string>
+    <string name="jellyseerr_server_url_description">Seerr server address (e.g., http://192.168.1.100:5055)</string>
     <string name="jellyseerr_password">Password</string>
-    <string name="jellyseerr_password_description">Your Jellyfin password for Jellyseerr authentication</string>
+    <string name="jellyseerr_password_description">Your Jellyfin password for Seerr authentication</string>
     <string name="jellyseerr_test_connection">Test Connection</string>
-    <string name="jellyseerr_test_connection_description">Test the connection to your Jellyseerr server</string>
-    <string name="jellyseerr_connection_success">Successfully connected to Jellyseerr!</string>
+    <string name="jellyseerr_test_connection_description">Test the connection to your Seerr server</string>
+    <string name="jellyseerr_connection_success">Successfully connected to Seerr!</string>
     <string name="jellyseerr_fill_fields">Please enter server URL and API key</string>
-    <string name="jellyseerr_search_results">Jellyseerr</string>
+    <string name="jellyseerr_search_results">Seerr</string>
     <string name="jellyseerr_connect_jellyfin">Login with Jellyfin</string>
     <string name="jellyseerr_connect_jellyfin_description">Automatically authenticate using your current Jellyfin account for ~30 days</string>
-    <string name="jellyseerr_connection_error">Unable to connect to Jellyseerr. Please log in again from settings to restore your session.</string>
+    <string name="jellyseerr_connection_error">Unable to connect to Seerr. Please log in again from settings to restore your session.</string>
     <string name="jellyseerr_setup_title">How to Connect</string>
-    <string name="jellyseerr_setup_info">Enter your Jellyseerr server URL and Jellyfin password above. Test the connection to authenticate and save your session.</string>
-    <string name="jellyseerr_show_in_toolbar">Show Jellyseerr in Toolbar</string>
-    <string name="jellyseerr_show_in_toolbar_description">Display Jellyseerr button in the main navigation toolbar</string>
+    <string name="jellyseerr_setup_info">Enter your Seerr server URL and Jellyfin password above. Test the connection to authenticate and save your session.</string>
+    <string name="jellyseerr_show_in_toolbar">Show Seerr in Toolbar</string>
+    <string name="jellyseerr_show_in_toolbar_description">Display Seerr button in the main navigation toolbar</string>
     <string name="jellyseerr_fetch_limit_title">Items per Row (3 pages loaded per category)</string>
     <string name="jellyseerr_fetch_limit_description">Number of items to fetch per API request (3 pages are loaded at once)</string>
     <string name="jellyseerr_fetch_limit_25">25 items</string>
     <string name="jellyseerr_fetch_limit_50">50 items</string>
     <string name="jellyseerr_fetch_limit_75">75 items</string>
     <string name="jellyseerr_block_nsfw">Block Adult Content</string>
-    <string name="jellyseerr_block_nsfw_description">Hide content tagged as adult/NSFW from Jellyseerr results</string>
+    <string name="jellyseerr_block_nsfw_description">Hide content tagged as adult/NSFW from Seerr results</string>
 
     <!-- Plugin Settings -->
     <string name="pref_plugin_settings">Plugin</string>
     <string name="pref_plugin_description">Settings synced via Moonfin server plugin</string>
     <string name="pref_plugin_sync_enable">Enable Plugin Sync</string>
     <string name="pref_plugin_sync_description">Sync settings with the Moonfin server plugin</string>
+    <string name="pref_toolbar_customization_description">Navigation bar and toolbar buttons</string>
+    <string name="pref_home_section_settings_description">Continue watching, libraries, folder view</string>
+    <string name="pref_media_bar_settings_description">Featured content carousel on home screen</string>
+    <string name="pref_theme_music_settings_description">Background music on detail screens</string>
+    <string name="pref_appearance_settings_description">Seasonal effects, background blur</string>
+    <string name="pref_ratings_title">Ratings</string>
+    <string name="pref_ratings_settings_description">External ratings and episode ratings</string>
 
     <!-- Moonfin Settings -->
     <string name="moonfin_settings">Moonfin Settings</string>
@@ -886,21 +893,21 @@
     <string name="moonfin_general_settings">General</string>
     <string name="settings_available_after_login">Settings available after login</string>
 
-    <!-- Jellyseerr Authentication -->
+    <!-- Seerr Authentication -->
     <string name="jellyseerr_auth_method">Authentication Method</string>
-    <string name="jellyseerr_auth_method_description">Choose how to authenticate with Jellyseerr</string>
+    <string name="jellyseerr_auth_method_description">Choose how to authenticate with Seerr</string>
     <string name="jellyseerr_auth_jellyfin">Jellyfin SSO</string>
     <string name="jellyseerr_auth_jellyfin_description">Login with your Jellyfin account (cookie-based, 30-day expiration)</string>
     <string name="jellyseerr_auth_local">Local Account</string>
-    <string name="jellyseerr_auth_local_description">Login with Jellyseerr email/password (permanent API key)</string>
+    <string name="jellyseerr_auth_local_description">Login with Seerr email/password (permanent API key)</string>
     <string name="jellyseerr_auto_api_key">Auto-Generate API Key</string>
     <string name="jellyseerr_auto_api_key_description">After Jellyfin login, generate permanent API key (requires admin permissions)</string>
     <string name="jellyseerr_regenerate_api_key">Regenerate API Key</string>
-    <string name="jellyseerr_regenerate_api_key_description">Generate permanent API key (requires admin permissions in Jellyseerr)</string>
+    <string name="jellyseerr_regenerate_api_key_description">Generate permanent API key (requires admin permissions in Seerr)</string>
     <string name="jellyseerr_local_email">Email</string>
-    <string name="jellyseerr_local_email_description">Your Jellyseerr account email</string>
+    <string name="jellyseerr_local_email_description">Your Seerr account email</string>
     <string name="jellyseerr_local_password">Local Password</string>
-    <string name="jellyseerr_local_password_description">Your Jellyseerr account password (not Jellyfin)</string>
+    <string name="jellyseerr_local_password_description">Your Seerr account password (not Jellyfin)</string>
     <string name="jellyseerr_api_key_status">API Key Status</string>
     <string name="jellyseerr_api_key_present">Permanent API key active</string>
     <string name="jellyseerr_api_key_absent">Using cookie-based auth (expires in ~30 days)</string>
@@ -908,16 +915,16 @@
     <string name="jellyseerr_login_local">Login with Local Account</string>
     <string name="jellyseerr_login_local_description">Authenticate using email and password</string>
     <string name="jellyseerr_login_api_key">Login with API Key</string>
-    <string name="jellyseerr_login_api_key_description">Use a permanent API key from Jellyseerr settings</string>
+    <string name="jellyseerr_login_api_key_description">Use a permanent API key from Seerr settings</string>
     <string name="jellyseerr_api_key_input">API Key</string>
-    <string name="jellyseerr_api_key_input_description">Get this from Jellyseerr web UI under Settings → General</string>
+    <string name="jellyseerr_api_key_input_description">Get this from Seerr web UI under Settings → General</string>
     <string name="jellyseerr_logout">Log Out</string>
-    <string name="jellyseerr_logout_description">Clear all Jellyseerr authentication data and cookies</string>
-    <string name="jellyseerr_logout_success">Logged out of Jellyseerr successfully</string>
-    <string name="jellyseerr_logout_confirm_title">Log Out of Jellyseerr?</string>
-    <string name="jellyseerr_logout_confirm_message">This will clear all authentication data and cookies. You will need to log in again to use Jellyseerr.</string>
+    <string name="jellyseerr_logout_description">Clear all Seerr authentication data and cookies</string>
+    <string name="jellyseerr_logout_success">Logged out of Seerr successfully</string>
+    <string name="jellyseerr_logout_confirm_title">Log Out of Seerr?</string>
+    <string name="jellyseerr_logout_confirm_message">This will clear all authentication data and cookies. You will need to log in again to use Seerr.</string>
 
-    <!-- Jellyseerr Moonfin Proxy -->
+    <!-- Seerr Moonfin Proxy -->
     <string name="jellyseerr_moonfin_proxy">Moonfin Proxy</string>
     <string name="jellyseerr_moonfin_proxy_status">Connection managed by Moonfin server plugin</string>
     <string name="jellyseerr_moonfin_connected">Connected as %s</string>
@@ -925,12 +932,12 @@
     <string name="jellyseerr_moonfin_disconnect">Disconnect Moonfin Proxy</string>
     <string name="jellyseerr_moonfin_disconnect_description">Stop using the server plugin proxy and return to direct connection mode</string>
     <string name="jellyseerr_moonfin_reconnect">Connect via Moonfin Plugin</string>
-    <string name="jellyseerr_moonfin_reconnect_description">Reconnect Jellyseerr through the Moonfin server plugin proxy</string>
+    <string name="jellyseerr_moonfin_reconnect_description">Reconnect Seerr through the Moonfin server plugin proxy</string>
     <string name="jellyseerr_moonfin_reconnect_success">Connected via Moonfin plugin</string>
     <string name="jellyseerr_moonfin_reconnect_failed">Failed to connect via Moonfin plugin</string>
-    <string name="jellyseerr_moonfin_not_enabled">Jellyseerr not enabled on server plugin</string>
+    <string name="jellyseerr_moonfin_not_enabled">Seerr not enabled on server plugin</string>
 
-    <!-- Jellyseerr Advanced Settings -->
+    <!-- Seerr Advanced Settings -->
     <string name="jellyseerr_advanced_settings">Advanced Request Settings</string>
     <string name="jellyseerr_advanced_settings_description">Configure custom quality profiles, root folders, and servers for requests</string>
     <string name="jellyseerr_hd_movie_profile">HD Movie Profile</string>
@@ -946,9 +953,9 @@
     <string name="jellyseerr_profile_error">Unable to load profiles. Check connection.</string>
     <string name="jellyseerr_profile_admin_required">Admin permissions required to configure quality profiles</string>
 
-    <!-- Jellyseerr Row Configuration -->
+    <!-- Seerr Row Configuration -->
     <string name="jellyseerr_rows_title">Discover Rows</string>
-    <string name="jellyseerr_rows_description">Enable, disable, and reorder rows on the Jellyseerr discover screen</string>
+    <string name="jellyseerr_rows_description">Enable, disable, and reorder rows on the Seerr discover screen</string>
     <string name="jellyseerr_rows_reset">Reset to Defaults</string>
     <string name="jellyseerr_row_recent_requests">Recent Requests</string>
     <string name="jellyseerr_row_trending">Trending</string>
@@ -969,7 +976,7 @@
     <string name="pref_visual_settings">Visual Settings</string>
     <string name="pref_background_blur_amount">Background Blur Amount</string>
     <string name="pref_background_blur_amount_description">Control blur intensity for all background images across the app</string>
-    <string name="pref_browsing_background_blur_amount">Home and Jellyseerr Background Blur</string>
+    <string name="pref_browsing_background_blur_amount">Home and Seerr Background Blur</string>
     <string name="pref_browsing_background_blur_amount_description">Blur intensity for home screen and discovery backgrounds</string>
         <string name="pref_details_background_blur_amount">Media Details Background Blur</string>
     <string name="pref_details_background_blur_amount_description">Blur intensity for movie, TV show, and episode details pages</string>

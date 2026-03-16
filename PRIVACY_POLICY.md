@@ -42,7 +42,7 @@ Moonfin can send crash reports to **your own Jellyfin server** when the app enco
 Moonfin communicates only with:
 
 - **Your Jellyfin server(s)** — To stream media, authenticate, and sync settings
-- **Your Jellyseerr server** (if configured) — To browse and request media
+- **Your Seerr server** (if configured) — To browse and request media
 - **GitHub API** (libre/sideloaded builds only) — To check for app updates
 
 Moonfin supports cleartext (HTTP) connections because many self-hosted Jellyfin servers run on local networks without HTTPS. No data is sent to any Moonfin-operated servers.
@@ -61,7 +61,7 @@ Moonfin is not directed at children under the age of 13. We do not knowingly col
 
 ## Third-Party Services
 
-Moonfin does not integrate with any third-party analytics, advertising, or tracking services. The only external services Moonfin communicates with are the servers you explicitly configure (Jellyfin, Jellyseerr).
+Moonfin does not integrate with any third-party analytics, advertising, or tracking services. The only external services Moonfin communicates with are the servers you explicitly configure (Jellyfin, Seerr).
 
 ## Changes to This Policy
 

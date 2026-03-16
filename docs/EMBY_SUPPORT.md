@@ -66,7 +66,7 @@ When adding a server, Moonfin automatically detects whether it is running Jellyf
 | Home screen channels | Yes | Yes | Uses common item abstraction |
 | Screensaver | Yes | Yes | Uses common image abstraction |
 | External player | Yes | Yes | Stream URL adapts per server type |
-| Jellyseerr | Yes | No | Requires Jellyfin server for auth |
+| Seerr | Yes | No | Requires Jellyfin server for auth |
 
 ## Feature Gating
 
@@ -111,7 +111,7 @@ The following Emby API responses are cached in memory with a 5-minute TTL to red
 - **BIF trickplay** (seek preview thumbnails) uses a different format than Jellyfin and is not yet implemented
 - **QuickConnect** on Emby uses a different API than Jellyfin and is not yet supported
 - **SyncPlay** is Jellyfin-only; Emby's "Watch Party" uses an incompatible protocol
-- **Jellyseerr** integration requires a Jellyfin server for authentication and does not work with Emby-only setups
+- **Seerr** integration requires a Jellyfin server for authentication and does not work with Emby-only setups
 
 ## Telemetry
 
