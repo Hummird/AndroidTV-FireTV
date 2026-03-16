@@ -27,7 +27,7 @@ object PluginSyncConstants {
 	 * Snapshot schema version. Increment when server key mappings change to
 	 * force a snapshot reset on the next sync (server-wins fallback).
 	 */
-	const val SNAPSHOT_VERSION = 2
+	const val SNAPSHOT_VERSION = 3
 
 	/** Key stored inside [SNAPSHOT_PREFS_NAME] to track the snapshot schema version. */
 	const val SNAPSHOT_VERSION_KEY = "_snapshot_version"
@@ -54,8 +54,10 @@ object PluginSyncConstants {
 	val USER_SETTING_PREFERENCES: List<SyncablePreference<*>> = listOf(
 		// Media Bar
 		SyncablePreference(UserSettingPreferences.mediaBarEnabled, SyncType.BOOLEAN, "mediaBarEnabled"),
+		SyncablePreference(UserSettingPreferences.mediaBarSourceType, SyncType.STRING, "mediaBarSourceType"),
 		SyncablePreference(UserSettingPreferences.mediaBarContentType, SyncType.STRING, "mediaBarContentType"),
 		SyncablePreference(UserSettingPreferences.mediaBarItemCount, SyncType.STRING, "mediaBarItemCount"),
+		SyncablePreference(UserSettingPreferences.mediaBarExcludedGenres, SyncType.STRING_LIST, "mediaBarExcludedGenres"),
 		SyncablePreference(UserSettingPreferences.mediaBarOverlayOpacity, SyncType.INT, "mediaBarOpacity"),
 		SyncablePreference(UserSettingPreferences.mediaBarOverlayColor, SyncType.STRING, "mediaBarOverlayColor"),
 		// Theme Music
@@ -104,7 +106,7 @@ object PluginSyncConstants {
 
 /** Type metadata for a syncable preference. */
 enum class SyncType {
-	BOOLEAN, INT, LONG, FLOAT, STRING, ENUM
+	BOOLEAN, INT, LONG, FLOAT, STRING, ENUM, STRING_LIST
 }
 
 /**

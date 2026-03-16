@@ -27,6 +27,15 @@ import org.jellyfin.sdk.api.client.ApiClient
 import android.content.Context
 import coil3.ImageLoader
 import coil3.request.ImageRequest
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.floatOrNull
+import kotlinx.serialization.json.intOrNull
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
+import okhttp3.OkHttpClient
+import okhttp3.Request
 import org.jellyfin.sdk.api.client.extensions.imageApi
 import org.jellyfin.sdk.api.client.extensions.itemsApi
 import org.jellyfin.sdk.api.client.exception.InvalidStatusException
@@ -38,6 +47,7 @@ import org.jellyfin.sdk.model.api.ItemFilter
 import timber.log.Timber
 import java.util.Locale
 import java.util.UUID
+import java.util.concurrent.TimeUnit
 
 class MediaBarSlideshowViewModel(
 	private val api: ApiClient,
@@ -79,6 +89,16 @@ class MediaBarSlideshowViewModel(
 	private val libraryCache: MutableMap<UUID, List<BaseItemDto>> = mutableMapOf()
 	private var preResolveJob: Job? = null
 	private var trailerReadyDeferred: CompletableDeferred<Unit>? = null
+
+	private val httpClient = OkHttpClient.Builder()
+		.connectTimeout(10, TimeUnit.SECONDS)
+		.readTimeout(10, TimeUnit.SECONDS)
+		.build()
+
+	private val json = Json {
+		ignoreUnknownKeys = true
+		isLenient = true
+	}
 
 	init {
 		userRepository.currentUser
@@ -211,6 +231,100 @@ class MediaBarSlideshowViewModel(
 		}
 	}
 
+	private suspend fun fetchPluginMediaBarItems(): List<MediaBarSlideItem>? = withContext(Dispatchers.IO) {
+		val baseUrl = api.baseUrl ?: return@withContext null
+		val token = api.accessToken ?: return@withContext null
+
+		try {
+			val request = Request.Builder()
+				.url("$baseUrl/Moonfin/MediaBar?profile=tv")
+				.header("Authorization", "MediaBrowser Token=\"$token\"")
+				.get()
+				.build()
+
+			val body = httpClient.newCall(request).execute().use { response ->
+				if (!response.isSuccessful) {
+					Timber.w("MediaBar: Plugin endpoint returned ${response.code}")
+					return@withContext null
+				}
+				response.body?.string()
+			}
+			if (body.isNullOrBlank()) return@withContext null
+
+			val root = json.decodeFromString<JsonObject>(body)
+			val itemsArray = (root["Items"] ?: root["items"]) as? JsonArray ?: return@withContext null
+
+			val slideItems = itemsArray.mapNotNull { element ->
+				val obj = element.jsonObject
+				val id = (obj["Id"] ?: obj["id"])?.jsonPrimitive?.content ?: return@mapNotNull null
+				val name = (obj["Name"] ?: obj["name"])?.jsonPrimitive?.content ?: return@mapNotNull null
+
+				val itemId = try {
+					val normalized = if (id.length == 32 && !id.contains('-')) {
+						"${id.substring(0,8)}-${id.substring(8,12)}-${id.substring(12,16)}-${id.substring(16,20)}-${id.substring(20)}"
+					} else id
+					UUID.fromString(normalized)
+				} catch (_: Exception) { return@mapNotNull null }
+				val type = (obj["Type"] ?: obj["type"])?.jsonPrimitive?.content
+				val itemType = when (type?.lowercase()) {
+					"series" -> BaseItemKind.SERIES
+					else -> BaseItemKind.MOVIE
+				}
+
+				val imageTags = (obj["ImageTags"] ?: obj["imageTags"]) as? JsonObject
+				val backdropTags = (obj["BackdropImageTags"] ?: obj["backdropImageTags"]) as? JsonArray
+
+				val logoTag = imageTags?.get("Logo")?.jsonPrimitive?.content
+				val backdropTag = backdropTags?.firstOrNull()?.jsonPrimitive?.content
+
+				val backdropUrl = backdropTag?.let {
+					api.imageApi.getItemImageUrl(
+						itemId = itemId,
+						imageType = ImageType.BACKDROP,
+						tag = it,
+						maxWidth = 1920,
+						quality = 90
+					)
+				}
+				val logoUrl = logoTag?.let {
+					api.imageApi.getItemImageUrl(
+						itemId = itemId,
+						imageType = ImageType.LOGO,
+						tag = it,
+						maxWidth = 800,
+					)
+				}
+
+				val genres = (obj["Genres"] ?: obj["genres"])?.let { el ->
+					(el as? JsonArray)?.mapNotNull { it.jsonPrimitive?.content }
+				} ?: emptyList()
+
+				MediaBarSlideItem(
+					itemId = itemId,
+					serverId = null,
+					title = name,
+					overview = (obj["Overview"] ?: obj["overview"])?.jsonPrimitive?.content,
+					backdropUrl = backdropUrl,
+					logoUrl = logoUrl,
+					rating = (obj["OfficialRating"] ?: obj["officialRating"])?.jsonPrimitive?.content,
+					year = (obj["ProductionYear"] ?: obj["productionYear"])?.jsonPrimitive?.intOrNull,
+					genres = genres.take(3),
+					runtime = (obj["RunTimeTicks"] ?: obj["runTimeTicks"])?.jsonPrimitive?.content?.toLongOrNull()?.let { it / 10000 },
+					criticRating = (obj["CriticRating"] ?: obj["criticRating"])?.jsonPrimitive?.intOrNull,
+					communityRating = (obj["CommunityRating"] ?: obj["communityRating"])?.jsonPrimitive?.floatOrNull,
+					itemType = itemType,
+				)
+			}
+
+			if (slideItems.isEmpty()) return@withContext null
+
+			slideItems
+		} catch (e: Exception) {
+			Timber.w(e, "MediaBar: Failed to fetch from plugin endpoint")
+			null
+		}
+	}
+
 	/**
 	 * Data class to hold item with its associated API client for URL generation.
 	 */
@@ -241,6 +355,26 @@ class MediaBarSlideshowViewModel(
 		loadingJob = viewModelScope.launch {
 		try {
 			_state.value = MediaBarState.Loading
+
+			val pluginSyncEnabled = userPreferences[UserPreferences.pluginSyncEnabled]
+			val mediaBarSourceType = userSettingPreferences[UserSettingPreferences.mediaBarSourceType]
+
+			if (pluginSyncEnabled && mediaBarSourceType == "plugin") {
+				val pluginItems = fetchPluginMediaBarItems()
+				if (pluginItems != null) {
+					serverApiClients[null] = api
+					items = pluginItems.filter { it.backdropUrl != null }
+					if (items.isNotEmpty()) {
+						_state.value = MediaBarState.Ready(items)
+						preloadAdjacentImages(0)
+						startAutoPlay()
+						startTrailerResolution(0)
+						preResolveAdjacentTrailers(0)
+						return@launch
+					}
+				}
+			}
+
 			val config = getConfig()
 			val contentType = userSettingPreferences[UserSettingPreferences.mediaBarContentType]
 

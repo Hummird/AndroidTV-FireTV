@@ -12,11 +12,13 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.booleanOrNull
+import kotlinx.serialization.json.buildJsonArray
 import kotlinx.serialization.json.floatOrNull
 import kotlinx.serialization.json.intOrNull
 import kotlinx.serialization.json.longOrNull
@@ -106,6 +108,21 @@ class PluginSyncService(
 		ignoreUnknownKeys = true
 		isLenient = true
 		encodeDefaults = true
+	}
+
+	private val stringListServerKeys: Set<String> by lazy {
+		(PluginSyncConstants.USER_PREFERENCES + PluginSyncConstants.USER_SETTING_PREFERENCES + PluginSyncConstants.JELLYSEERR_PREFERENCES)
+			.filter { it.type == SyncType.STRING_LIST }
+			.map { it.serverKey }
+			.toSet()
+	}
+
+	private fun parseStringList(raw: String): List<String> {
+		if (raw.isBlank() || raw == "[]") return emptyList()
+		return try {
+			(json.parseToJsonElement(raw) as? JsonArray)
+				?.mapNotNull { (it as? JsonPrimitive)?.content } ?: emptyList()
+		} catch (_: Exception) { emptyList() }
 	}
 
 	/** Whether the server plugin was reachable on the last ping. */
@@ -676,6 +693,10 @@ class PluginSyncService(
 			SyncType.LONG -> store[sp.preference as Preference<Long>]
 			SyncType.FLOAT -> store[sp.preference as Preference<Float>]
 			SyncType.STRING -> store[sp.preference as Preference<String>]
+			SyncType.STRING_LIST -> {
+				val raw = store[sp.preference as Preference<String>]
+				parseStringList(raw)
+			}
 			SyncType.ENUM -> {
 				val raw = store.getRawString(sp.preference.key, "")
 				if (raw.isNotBlank()) {
@@ -733,6 +754,17 @@ class PluginSyncService(
 			SyncType.STRING -> {
 				store.putRawString(sp.preference.key, value.toString())
 			}
+			SyncType.STRING_LIST -> {
+				val list = when (value) {
+					is List<*> -> value.mapNotNull { it?.toString() }
+					is String -> parseStringList(value)
+					else -> emptyList()
+				}
+				val jsonStr = buildJsonArray {
+					list.forEach { add(JsonPrimitive(it)) }
+				}.toString()
+				store.putRawString(sp.preference.key, jsonStr)
+			}
 			SyncType.ENUM -> {
 				// Server may send PascalCase (e.g. "Top") while local enum names are UPPER_CASE (e.g. "TOP").
 				// Match case-insensitively against the enum constants and write the canonical name.
@@ -781,6 +813,7 @@ class PluginSyncService(
 					else -> element.content
 				}
 			}
+			is JsonArray -> element.mapNotNull { (it as? JsonPrimitive)?.content }
 			else -> element.toString()
 		}
 	}
@@ -797,6 +830,9 @@ class PluginSyncService(
 				is Long -> JsonPrimitive(value)
 				is Float -> JsonPrimitive(value)
 				is Double -> JsonPrimitive(value)
+				is List<*> -> buildJsonArray {
+					value.forEach { add(JsonPrimitive(it?.toString() ?: "")) }
+				}
 				is String -> JsonPrimitive(value)
 				else -> JsonPrimitive(value.toString())
 			}
@@ -831,7 +867,11 @@ class PluginSyncService(
 		val map = mutableMapOf<String, Any?>()
 		for ((key, value) in all) {
 			if (key in PluginSyncConstants.ALL_SERVER_KEYS) {
-				map[key] = value
+				if (key in stringListServerKeys && value is String) {
+					map[key] = parseStringList(value)
+				} else {
+					map[key] = value
+				}
 			}
 		}
 		return map
@@ -851,6 +891,12 @@ class PluginSyncService(
 				is Int -> editor.putInt(key, value)
 				is Long -> editor.putLong(key, value)
 				is Float -> editor.putFloat(key, value)
+				is List<*> -> {
+					val jsonStr = buildJsonArray {
+						value.forEach { add(JsonPrimitive(it?.toString() ?: "")) }
+					}.toString()
+					editor.putString(key, jsonStr)
+				}
 				is String -> editor.putString(key, value)
 				null -> { /* skip nulls */ }
 				else -> editor.putString(key, value.toString())

@@ -42,8 +42,10 @@ import org.jellyfin.androidtv.ui.settings.screen.moonfin.SettingsMoonfinDetailsB
 import org.jellyfin.androidtv.ui.settings.screen.moonfin.SettingsMoonfinHomeRowsImageScreen
 import org.jellyfin.androidtv.ui.settings.screen.moonfin.SettingsMoonfinMediaBarColorScreen
 import org.jellyfin.androidtv.ui.settings.screen.moonfin.SettingsMoonfinMediaBarContentTypeScreen
+import org.jellyfin.androidtv.ui.settings.screen.moonfin.SettingsMoonfinMediaBarExcludedGenresScreen
 import org.jellyfin.androidtv.ui.settings.screen.moonfin.SettingsMoonfinMediaBarItemCountScreen
 import org.jellyfin.androidtv.ui.settings.screen.moonfin.SettingsMoonfinMediaBarOpacityScreen
+import org.jellyfin.androidtv.ui.settings.screen.moonfin.SettingsMoonfinMediaBarSourceTypeScreen
 import org.jellyfin.androidtv.ui.settings.screen.moonfin.SettingsMoonfinNavbarPositionScreen
 import org.jellyfin.androidtv.ui.settings.screen.moonfin.SettingsMoonfinParentalControlsScreen
 import org.jellyfin.androidtv.ui.settings.screen.moonfin.SettingsPluginScreen
@@ -128,6 +130,8 @@ object Routes {
 	const val PLUGIN = "/plugin"
 	const val MOONFIN_NAVBAR_POSITION = "/moonfin/navbar-position"
 	const val MOONFIN_SHUFFLE_CONTENT_TYPE = "/moonfin/shuffle-content-type"
+	const val MOONFIN_MEDIA_BAR_SOURCE_TYPE = "/moonfin/media-bar-source-type"
+	const val MOONFIN_MEDIA_BAR_EXCLUDED_GENRES = "/moonfin/media-bar-excluded-genres"
 	const val MOONFIN_MEDIA_BAR_CONTENT_TYPE = "/moonfin/media-bar-content-type"
 	const val MOONFIN_MEDIA_BAR_ITEM_COUNT = "/moonfin/media-bar-item-count"
 	const val MOONFIN_MEDIA_BAR_OPACITY = "/moonfin/media-bar-opacity"
@@ -376,6 +380,12 @@ val routes = mapOf<String, RouteComposable>(
 	},
 	Routes.MOONFIN_SHUFFLE_CONTENT_TYPE to {
 		SettingsMoonfinShuffleContentTypeScreen()
+	},
+	Routes.MOONFIN_MEDIA_BAR_SOURCE_TYPE to {
+		SettingsMoonfinMediaBarSourceTypeScreen()
+	},
+	Routes.MOONFIN_MEDIA_BAR_EXCLUDED_GENRES to {
+		SettingsMoonfinMediaBarExcludedGenresScreen()
 	},
 	Routes.MOONFIN_MEDIA_BAR_CONTENT_TYPE to {
 		SettingsMoonfinMediaBarContentTypeScreen()

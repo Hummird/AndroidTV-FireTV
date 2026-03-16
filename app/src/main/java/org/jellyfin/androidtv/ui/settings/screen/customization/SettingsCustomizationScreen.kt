@@ -125,6 +125,13 @@ fun SettingsCustomizationScreen() {
 }
 
 @Composable
+fun getMediaBarSourceTypeLabel(sourceType: String): String = when (sourceType) {
+	"local" -> stringResource(R.string.pref_media_bar_source_local)
+	"plugin" -> stringResource(R.string.pref_media_bar_source_plugin)
+	else -> sourceType
+}
+
+@Composable
 fun getShuffleContentTypeLabel(type: String): String = when (type) {
 	"movies" -> stringResource(R.string.pref_shuffle_movies)
 	"tv" -> stringResource(R.string.pref_shuffle_tv)

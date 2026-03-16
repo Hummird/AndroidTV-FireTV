@@ -22,8 +22,11 @@ import org.jellyfin.androidtv.ui.navigation.LocalRouter
 import org.jellyfin.androidtv.ui.settings.Routes
 import org.jellyfin.androidtv.ui.settings.compat.rememberPreference
 import org.jellyfin.androidtv.ui.settings.composable.SettingsColumn
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonArray
 import org.jellyfin.androidtv.ui.settings.screen.customization.getBlurLabel
 import org.jellyfin.androidtv.ui.settings.screen.customization.getMediaBarItemCountLabel
+import org.jellyfin.androidtv.ui.settings.screen.customization.getMediaBarSourceTypeLabel
 import org.jellyfin.androidtv.ui.settings.screen.customization.getOverlayColorLabel
 import org.jellyfin.androidtv.ui.settings.screen.customization.getSeasonalLabel
 import org.jellyfin.androidtv.ui.settings.screen.customization.getShuffleContentTypeLabel
@@ -195,22 +198,57 @@ fun SettingsPluginScreen() {
 
 		item {
 			val mediaBarEnabled by rememberPreference(userSettingPreferences, UserSettingPreferences.mediaBarEnabled)
+			val mediaBarSourceType by rememberPreference(userSettingPreferences, UserSettingPreferences.mediaBarSourceType)
+			val pluginSyncEnabled = userPreferences[UserPreferences.pluginSyncEnabled]
+			ListButton(
+				headingContent = { Text(stringResource(R.string.pref_media_bar_source_type)) },
+				captionContent = { Text(getMediaBarSourceTypeLabel(mediaBarSourceType)) },
+				enabled = mediaBarEnabled && pluginSyncEnabled,
+				onClick = { router.push(Routes.MOONFIN_MEDIA_BAR_SOURCE_TYPE) }
+			)
+		}
+
+		item {
+			val mediaBarEnabled by rememberPreference(userSettingPreferences, UserSettingPreferences.mediaBarEnabled)
+			val mediaBarSourceType by rememberPreference(userSettingPreferences, UserSettingPreferences.mediaBarSourceType)
+			val pluginSyncEnabled = userPreferences[UserPreferences.pluginSyncEnabled]
+			val excludedGenres = userSettingPreferences[UserSettingPreferences.mediaBarExcludedGenres]
+			val excludedCount = try {
+				val arr = Json.parseToJsonElement(excludedGenres.ifBlank { "[]" }) as? JsonArray
+				arr?.size ?: 0
+			} catch (_: Exception) { 0 }
+			val caption = if (excludedCount == 0) stringResource(R.string.pref_media_bar_excluded_genres_none)
+				else "$excludedCount excluded"
+			ListButton(
+				headingContent = { Text(stringResource(R.string.pref_media_bar_excluded_genres)) },
+				captionContent = { Text(caption) },
+				enabled = mediaBarEnabled && mediaBarSourceType == "plugin" && pluginSyncEnabled,
+				onClick = { router.push(Routes.MOONFIN_MEDIA_BAR_EXCLUDED_GENRES) }
+			)
+		}
+
+		item {
+			val mediaBarEnabled by rememberPreference(userSettingPreferences, UserSettingPreferences.mediaBarEnabled)
+			val mediaBarSourceType by rememberPreference(userSettingPreferences, UserSettingPreferences.mediaBarSourceType)
+			val pluginSyncEnabled = userPreferences[UserPreferences.pluginSyncEnabled]
 			val mediaBarContentType by rememberPreference(userSettingPreferences, UserSettingPreferences.mediaBarContentType)
 			ListButton(
 				headingContent = { Text(stringResource(R.string.pref_media_bar_content_type)) },
 				captionContent = { Text(getShuffleContentTypeLabel(mediaBarContentType)) },
-				enabled = mediaBarEnabled,
+				enabled = mediaBarEnabled && !(mediaBarSourceType == "plugin" && pluginSyncEnabled),
 				onClick = { router.push(Routes.MOONFIN_MEDIA_BAR_CONTENT_TYPE) }
 			)
 		}
 
 		item {
 			val mediaBarEnabled by rememberPreference(userSettingPreferences, UserSettingPreferences.mediaBarEnabled)
+			val mediaBarSourceType by rememberPreference(userSettingPreferences, UserSettingPreferences.mediaBarSourceType)
+			val pluginSyncEnabled = userPreferences[UserPreferences.pluginSyncEnabled]
 			val mediaBarItemCount by rememberPreference(userSettingPreferences, UserSettingPreferences.mediaBarItemCount)
 			ListButton(
 				headingContent = { Text(stringResource(R.string.pref_media_bar_item_count)) },
 				captionContent = { Text(getMediaBarItemCountLabel(mediaBarItemCount)) },
-				enabled = mediaBarEnabled,
+				enabled = mediaBarEnabled && !(mediaBarSourceType == "plugin" && pluginSyncEnabled),
 				onClick = { router.push(Routes.MOONFIN_MEDIA_BAR_ITEM_COUNT) }
 			)
 		}

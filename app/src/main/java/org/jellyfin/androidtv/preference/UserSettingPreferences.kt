@@ -48,8 +48,10 @@ class UserSettingPreferences(
 		
 		// Media Bar settings
 		val mediaBarEnabled = booleanPreference("mediaBarEnabled", true)
+		val mediaBarSourceType = stringPreference("mediaBarSourceType", "plugin")
 		val mediaBarContentType = stringPreference("mediaBarContentType", "both")
 		val mediaBarItemCount = stringPreference("mediaBarItemCount", "10")
+		val mediaBarExcludedGenres = stringPreference("mediaBarExcludedGenres", "[]")
 		val mediaBarOverlayOpacity = intPreference("mediaBarOverlayOpacity", 50)
 		val mediaBarOverlayColor = stringPreference("mediaBarOverlayColor", "gray")
 		val mediaBarTrailerPreview = booleanPreference("mediaBarTrailerPreview", true)
