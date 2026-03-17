@@ -285,6 +285,7 @@ private fun CollapsibleSidebarContent(
 	val homeFocusRequester = remember { FocusRequester() }
 
 	var librariesHasFocus by remember { mutableStateOf(false) }
+	var librariesExpanded by remember { mutableStateOf(false) }
 
 	LaunchedEffect(isExpanded) {
 		if (isExpanded) {
@@ -541,72 +542,70 @@ private fun CollapsibleSidebarContent(
 				}
 
 				if (showLibrariesInToolbar) {
-					SidebarIconItem(
-						icon = librariesIcon,
-						label = stringResource(R.string.pref_libraries),
-						showLabel = isExpanded,
-						isExpanded = isExpanded,
-						onFocusChanged = { hasFocus ->
-							librariesHasFocus = hasFocus
-						},
-						onClick = {
-							// Always navigate to first library when clicking Libraries button
-							if (enableMultiServer && aggregatedLibraries.isNotEmpty()) {
-								val firstLib = aggregatedLibraries.first()
-								scope.launch {
-									val destination = when (firstLib.library.collectionType) {
-										CollectionType.LIVETV, CollectionType.MUSIC -> {
-											itemLauncher.getUserViewDestination(firstLib.library)
-										}
-										else -> {
-											Destinations.libraryBrowser(firstLib.library, firstLib.server.id, firstLib.userId)
-										}
-									}
-									navigationRepository.navigate(destination)
-								}
-							} else if (userViews.isNotEmpty()) {
-								val firstLib = userViews.first()
-								val destination = itemLauncher.getUserViewDestination(firstLib)
-								navigationRepository.navigate(destination)
+					val librariesFocusRequester = remember { FocusRequester() }
+					Column(
+						modifier = Modifier.onFocusChanged { focusState ->
+							librariesHasFocus = focusState.hasFocus
+						}
+					) {
+						LaunchedEffect(librariesHasFocus) {
+							if (!librariesHasFocus && librariesExpanded) {
+								delay(100)
+								librariesExpanded = false
 							}
 						}
-					)
 
-					if (isExpanded && librariesHasFocus) {
-						if (enableMultiServer && aggregatedLibraries.isNotEmpty()) {
-							aggregatedLibraries.forEach { aggLib ->
-								SidebarTextItem(
-									label = aggLib.displayName,
-									onFocusChanged = { hasFocus ->
-										if (hasFocus) librariesHasFocus = true
-									},
-									onClick = {
-										scope.launch {
-											val destination = when (aggLib.library.collectionType) {
-												CollectionType.LIVETV, CollectionType.MUSIC -> {
-													itemLauncher.getUserViewDestination(aggLib.library)
+						LaunchedEffect(isExpanded) {
+							if (!isExpanded) librariesExpanded = false
+						}
+
+						SidebarIconItem(
+							icon = librariesIcon,
+							label = stringResource(R.string.pref_libraries),
+							showLabel = isExpanded,
+							isExpanded = isExpanded,
+							onClick = {
+								librariesExpanded = !librariesExpanded
+								if (librariesExpanded) {
+									scope.launch {
+										librariesFocusRequester.requestFocus()
+									}
+								}
+							}
+						)
+
+						if (isExpanded && librariesExpanded) {
+							if (enableMultiServer && aggregatedLibraries.isNotEmpty()) {
+								aggregatedLibraries.forEachIndexed { index, aggLib ->
+									SidebarTextItem(
+										label = aggLib.displayName,
+										modifier = if (index == 0) Modifier.focusRequester(librariesFocusRequester) else Modifier,
+										onClick = {
+											scope.launch {
+												val destination = when (aggLib.library.collectionType) {
+													CollectionType.LIVETV, CollectionType.MUSIC -> {
+														itemLauncher.getUserViewDestination(aggLib.library)
+													}
+													else -> {
+														Destinations.libraryBrowser(aggLib.library, aggLib.server.id, aggLib.userId)
+													}
 												}
-												else -> {
-													Destinations.libraryBrowser(aggLib.library, aggLib.server.id, aggLib.userId)
-												}
+												navigationRepository.navigate(destination)
 											}
+										}
+									)
+								}
+							} else {
+								userViews.forEachIndexed { index, library ->
+									SidebarTextItem(
+										label = library.name ?: "",
+										modifier = if (index == 0) Modifier.focusRequester(librariesFocusRequester) else Modifier,
+										onClick = {
+											val destination = itemLauncher.getUserViewDestination(library)
 											navigationRepository.navigate(destination)
 										}
-									}
-								)
-							}
-						} else {
-							userViews.forEach { library ->
-								SidebarTextItem(
-									label = library.name ?: "",
-									onFocusChanged = { hasFocus ->
-										if (hasFocus) librariesHasFocus = true
-									},
-									onClick = {
-										val destination = itemLauncher.getUserViewDestination(library)
-										navigationRepository.navigate(destination)
-									}
-								)
+									)
+								}
 							}
 						}
 					}
@@ -815,21 +814,17 @@ private fun SidebarIconItem(
 @Composable
 private fun SidebarTextItem(
 	label: String,
-	onFocusChanged: ((Boolean) -> Unit)? = null,
+	modifier: Modifier = Modifier,
 	onClick: () -> Unit
 ) {
 	val interactionSource = remember { MutableInteractionSource() }
 	val isFocused by interactionSource.collectIsFocusedAsState()
 
-	LaunchedEffect(isFocused) {
-		onFocusChanged?.invoke(isFocused)
-	}
-
 	val focusedColor = focusBorderColor()
 	val textColor = Color.White
 
 	Row(
-		modifier = Modifier
+		modifier = modifier
 			.focusable(interactionSource = interactionSource)
 			.onKeyEvent { keyEvent ->
 				if (keyEvent.key == Key.DirectionCenter || keyEvent.key == Key.Enter) {
