@@ -444,9 +444,9 @@ private fun CardViewHolderContent(
 			},
 			overlay = {
 				val userSettingPrefs = koinInject<UserSettingPreferences>()
-				val episodePreviewEnabled = remember { userSettingPrefs[UserSettingPreferences.episodePreviewEnabled] }
-				val trailerPreviewEnabled = remember { userSettingPrefs[UserSettingPreferences.mediaBarTrailerPreview] }
-				val previewAudioEnabled = remember { userSettingPrefs[UserSettingPreferences.previewAudioEnabled] }
+				val episodePreviewEnabled = userSettingPrefs[UserSettingPreferences.episodePreviewEnabled]
+				val trailerPreviewEnabled = userSettingPrefs[UserSettingPreferences.mediaBarTrailerPreview]
+				val previewAudioEnabled = userSettingPrefs[UserSettingPreferences.previewAudioEnabled]
 				val baseItem = item.baseItem
 				if (episodePreviewEnabled && baseItem != null && isEligibleForPreview(baseItem)) {
 					EpisodePreviewOverlay(
