@@ -94,7 +94,6 @@ fun EpisodePreviewOverlay(
 	val httpDataSourceFactory = koinInject<HttpDataSource.Factory>()
 
 	var streamUrl by remember { mutableStateOf<String?>(null) }
-	var fallbackUrl by remember { mutableStateOf<String?>(null) }
 	var seekPositionMs by remember { mutableStateOf(0L) }
 	var isPlaying by remember { mutableStateOf(false) }
 	var exoPlayer by remember { mutableStateOf<ExoPlayer?>(null) }
@@ -113,7 +112,6 @@ fun EpisodePreviewOverlay(
 	LaunchedEffect(focused, item.id) {
 		if (!focused) {
 			streamUrl = null
-			fallbackUrl = null
 			isPlaying = false
 			exoPlayer?.stop()
 			exoPlayer?.release()
@@ -124,7 +122,7 @@ fun EpisodePreviewOverlay(
 		delay(PREVIEW_START_DELAY_MS)
 
 		try {
-			val (primaryUrl, fallbackUrlResolved, introEndMs) = withContext(Dispatchers.IO) {
+			val (primaryUrl, introEndMs) = withContext(Dispatchers.IO) {
 				// Transcoded stream first: forces H.264 8-bit (SDR), no Dolby Vision/HDR
 				val transcoded = effectiveApi.videosApi.getVideoStreamUrl(
 					itemId = item.id,
@@ -135,11 +133,6 @@ fun EpisodePreviewOverlay(
 					audioBitRate = 128000,
 					audioChannels = 2,
 					subtitleMethod = org.jellyfin.sdk.model.api.SubtitleDeliveryMethod.DROP,
-				)
-
-				val direct = effectiveApi.videosApi.getVideoStreamUrl(
-					itemId = item.id,
-					static = true,
 				)
 
 				val seekMs = try {
@@ -158,11 +151,10 @@ fun EpisodePreviewOverlay(
 					if (positionTicks > 0) positionTicks / 10_000L else runtimeFallbackMs(item)
 				}
 
-				Triple(transcoded, direct, seekMs)
+				Pair(transcoded, seekMs)
 			}
 
 			streamUrl = primaryUrl
-			fallbackUrl = fallbackUrlResolved
 			seekPositionMs = introEndMs
 		} catch (e: Exception) {
 			Timber.w(e, "EpisodePreview: Failed to resolve stream URL for ${item.name}")
@@ -229,11 +221,6 @@ fun EpisodePreviewOverlay(
 					Timber.w("EpisodePreview: Error for ${item.name}: ${error.message}")
 					isPlaying = false
 					handler.removeCallbacks(stopRunnable)
-					val fb = fallbackUrl
-					if (fb != null) {
-						fallbackUrl = null
-						streamUrl = fb
-					}
 				}
 			})
 
