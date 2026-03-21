@@ -241,14 +241,23 @@ fun EpisodePreviewOverlay(
 		DisposableEffect(lifecycleOwner, exoPlayer) {
 			val observer = LifecycleEventObserver { _, event ->
 				when (event) {
-					Lifecycle.Event.ON_PAUSE -> exoPlayer?.pause()
-					Lifecycle.Event.ON_RESUME -> exoPlayer?.play()
+					Lifecycle.Event.ON_PAUSE,
+					Lifecycle.Event.ON_STOP,
+					Lifecycle.Event.ON_DESTROY -> {
+						exoPlayer?.stop()
+						exoPlayer?.release()
+						exoPlayer = null
+						isPlaying = false
+					}
 					else -> {}
 				}
 			}
 			lifecycleOwner.lifecycle.addObserver(observer)
 			if (!lifecycleOwner.lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED)) {
-				exoPlayer?.pause()
+				exoPlayer?.stop()
+				exoPlayer?.release()
+				exoPlayer = null
+				isPlaying = false
 			}
 			onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
 		}
