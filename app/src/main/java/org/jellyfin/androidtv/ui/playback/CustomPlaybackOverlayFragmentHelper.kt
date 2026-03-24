@@ -195,12 +195,13 @@ fun CustomPlaybackOverlayFragment.askToSkip(position: Duration, segmentType: Med
 	// Post to main thread since this is called from ExoPlayer's playback thread
 	lifecycleScope.launch(Dispatchers.Main) {
 		val playbackController = playbackController
+		val userPreferences by inject<UserPreferences>()
 
 		// Only show "Play Next Episode" for OUTRO segments (if the user wants it)
 		val isOutro = segmentType == MediaSegmentType.OUTRO
 		val hasNextEpisode = playbackController?.hasNextItem() == true
 		val nextEpisode = playbackController?.nextItem
-		val mergeSkipOutroNextUp = userPreferences.value[UserPreferences.mergeSkipOutroNextUp]
+		val mergeSkipOutroNextUp = userPreferences[UserPreferences.mergeSkipOutroNextUp]
 
 		if (isOutro && hasNextEpisode && nextEpisode != null && mergeSkipOutroNextUp) {
 			// Show "Play Next Episode" button for outro segments
